@@ -1,0 +1,142 @@
+{
+  "format": 1,
+  "restore": {
+    "/tmp/jellyfin-profanity-filter/MovieTester/MovieTester.csproj": {}
+  },
+  "projects": {
+    "/tmp/jellyfin-profanity-filter/Jellyfin.Plugin.ProfanityFilter/Jellyfin.Plugin.ProfanityFilter.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/tmp/jellyfin-profanity-filter/Jellyfin.Plugin.ProfanityFilter/Jellyfin.Plugin.ProfanityFilter.csproj",
+        "projectName": "Jellyfin.Plugin.ProfanityFilter",
+        "projectPath": "/tmp/jellyfin-profanity-filter/Jellyfin.Plugin.ProfanityFilter/Jellyfin.Plugin.ProfanityFilter.csproj",
+        "packagesPath": "/home/michael-erekson/.nuget/packages/",
+        "outputPath": "/tmp/jellyfin-profanity-filter/Jellyfin.Plugin.ProfanityFilter/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/michael-erekson/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "Jellyfin.Controller": {
+              "include": "Compile, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "target": "Package",
+              "version": "[10.11.3, )"
+            },
+            "Jellyfin.Model": {
+              "include": "Compile, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "target": "Package",
+              "version": "[10.11.3, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/home/michael-erekson/.dotnet/sdk/9.0.308/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/tmp/jellyfin-profanity-filter/MovieTester/MovieTester.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/tmp/jellyfin-profanity-filter/MovieTester/MovieTester.csproj",
+        "projectName": "MovieTester",
+        "projectPath": "/tmp/jellyfin-profanity-filter/MovieTester/MovieTester.csproj",
+        "packagesPath": "/home/michael-erekson/.nuget/packages/",
+        "outputPath": "/tmp/jellyfin-profanity-filter/MovieTester/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/michael-erekson/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "/tmp/jellyfin-profanity-filter/Jellyfin.Plugin.ProfanityFilter/Jellyfin.Plugin.ProfanityFilter.csproj": {
+                "projectPath": "/tmp/jellyfin-profanity-filter/Jellyfin.Plugin.ProfanityFilter/Jellyfin.Plugin.ProfanityFilter.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/home/michael-erekson/.dotnet/sdk/9.0.308/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

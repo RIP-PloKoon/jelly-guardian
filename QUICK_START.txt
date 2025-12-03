@@ -1,0 +1,128 @@
+╔═══════════════════════════════════════════════════════════════╗
+║     Jellyfin Profanity Filter - QUICK START                  ║
+║     TV Guardian for Self-Hosted Streaming                    ║
+╚═══════════════════════════════════════════════════════════════╝
+
+⚡ ONE-COMMAND INSTALL:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+cd /tmp/jellyfin-profanity-filter && ./install.sh
+
+⚠️  BEFORE YOU START - CRITICAL REQUIREMENT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This plugin REQUIRES SUBTITLES to work!
+
+Option 1 (Recommended):
+  1. Open Jellyfin Dashboard
+  2. Plugins → Catalog → Install "Subtitle Extractor"
+  3. Dashboard → Scheduled Tasks → Run "Extract Subtitle Images"
+  4. Wait for extraction to complete
+
+Option 2 (Manual):
+  Put .srt files next to your movies:
+    /Movies/Deadpool (2016).mkv
+    /Movies/Deadpool (2016).srt  ← Add this
+
+
+📋 MANUAL INSTALLATION (If script fails):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Build:
+   cd /tmp/jellyfin-profanity-filter
+   ~/.dotnet/dotnet build --configuration Release
+
+2. Install:
+   mkdir -p /path/to/jellyfin/plugins/ProfanityFilter_1.0.0
+   cp Jellyfin.Plugin.ProfanityFilter/bin/Release/net9.0/*.dll \
+      /path/to/jellyfin/plugins/ProfanityFilter_1.0.0/
+
+3. Restart Jellyfin:
+   sudo systemctl restart jellyfin
+
+4. Verify:
+   Dashboard → Plugins → Look for "Profanity Filter"
+
+
+🎬 AFTER INSTALLATION:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Configure:
+   Dashboard → Plugins → Profanity Filter → Save
+
+2. Scan Library:
+   Dashboard → Scheduled Tasks → "Scan Library for Profanity" → Run Now
+
+3. Install Client Script:
+   Dashboard → General → Custom Javascript:
+   Paste this:
+   ┌────────────────────────────────────────────────────────┐
+   │ (function() {                                          │
+   │     const script = document.createElement('script');   │
+   │     script.src = '/ProfanityFilter/profanity-filter.js';│
+   │     document.head.appendChild(script);                 │
+   │ })();                                                  │
+   └────────────────────────────────────────────────────────┘
+
+4. Test:
+   - Play a movie (like Deadpool)
+   - Press F12 (browser console)
+   - Type: profanityFilter.toggleFilter()
+   - Listen for muted profanity!
+
+
+✅ VERIFICATION:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Plugin loaded?
+  Dashboard → Plugins → See "Profanity Filter"
+
+Subtitles found?
+  find /var/lib/jellyfin/data/subtitles/ -name "*.srt" | wc -l
+
+Scan completed?
+  find /path/to/Movies/ -name "*.profanity.json" | head -5
+
+Client script working?
+  Browser console (F12) → Type: profanityFilter
+
+
+🐛 TROUBLESHOOTING:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Logs:
+  tail -f /var/log/jellyfin/jellyfin.log | grep Profanity
+
+Plugin not showing:
+  - Check .NET version: dotnet --version (need 9.0+)
+  - Check DLL exists: ls -lh /path/to/plugins/ProfanityFilter_1.0.0/
+  - Restart Jellyfin
+
+No profanity detected:
+  - Test subtitle: /tmp/enhanced-tester.sh /path/to/subtitle.srt
+  - Check word list: Dashboard → Plugins → Profanity Filter
+
+Not muting during playback:
+  - Check console: profanityFilter.getStatus()
+  - Verify metadata: cat "/path/to/Movie.profanity.json"
+  - Check Custom Javascript is saved
+
+
+📚 FULL DOCUMENTATION:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Read INSTALL.md for detailed step-by-step instructions
+Read README.md for features and architecture
+Read DEPLOYMENT_GUIDE.md for production deployment
+
+
+🎉 SUCCESS CRITERIA:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Dashboard shows "Profanity Filter" plugin
+✅ Scan task found and processed movies
+✅ .profanity.json files exist next to movies
+✅ Browser console shows profanityFilter object
+✅ Playing movie mutes profanity automatically
+
+Enjoy clean, family-friendly streaming! 🎬🔇
