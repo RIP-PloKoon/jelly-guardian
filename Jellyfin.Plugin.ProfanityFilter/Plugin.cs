@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
+using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 using Jellyfin.Plugin.ProfanityFilter.Configuration;
 
@@ -10,7 +12,7 @@ namespace Jellyfin.Plugin.ProfanityFilter;
 /// The main plugin class for Profanity Filter.
 /// Inspired by TV Guardian/Parent Guardian hardware filter.
 /// </summary>
-public class Plugin : BasePlugin<PluginConfiguration>
+public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="Plugin"/> class.
@@ -33,4 +35,17 @@ public class Plugin : BasePlugin<PluginConfiguration>
     /// Gets the current plugin instance.
     /// </summary>
     public static Plugin? Instance { get; private set; }
+
+    /// <inheritdoc />
+    public IEnumerable<PluginPageInfo> GetPages()
+    {
+        return new[]
+        {
+            new PluginPageInfo
+            {
+                Name = Name,
+                EmbeddedResourcePath = $"{GetType().Namespace}.Configuration.configPage.html"
+            }
+        };
+    }
 }

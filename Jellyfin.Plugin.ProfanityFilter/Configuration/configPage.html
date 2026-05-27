@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profanity Filter</title>
+</head>
+<body>
+    <div id="ProfanityFilterConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="ProfanityFilterConfigForm">
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="EnabledByDefault" />
+                            <span>Enabled by default</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">Enable filtering by default for users.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="ProfanityWords">Profanity words</label>
+                        <textarea is="emby-input" id="ProfanityWords" class="emby-input" rows="8"></textarea>
+                        <div class="fieldDescription">Comma-separated words. Leave blank to use the built-in word list.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MutePaddingMs">Mute padding milliseconds</label>
+                        <input is="emby-input" type="number" id="MutePaddingMs" min="0" step="25" />
+                        <div class="fieldDescription">Extra mute time before and after each detected word.</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="MuteEntireSentence" />
+                            <span>Mute entire sentence</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">Mute the full subtitle line instead of only the detected word timing.</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="EnableWordReplacement" />
+                            <span>Enable word replacement</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">Use replacement text for generated metadata when available.</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="UseGrammaticalReplacement" />
+                            <span>Use grammatical replacement</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">Choose replacements using subtitle context.</div>
+                    </div>
+
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            (function () {
+                const pluginId = 'a1b2c3d4-5678-90ab-cdef-123456789012';
+
+                function getValue(page, id) {
+                    return page.querySelector('#' + id);
+                }
+
+                function loadConfig(page) {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        getValue(page, 'EnabledByDefault').checked = config.EnabledByDefault || false;
+                        getValue(page, 'ProfanityWords').value = config.ProfanityWords || '';
+                        getValue(page, 'EnableWordReplacement').checked = config.EnableWordReplacement || false;
+                        getValue(page, 'UseGrammaticalReplacement').checked = config.UseGrammaticalReplacement || false;
+                        getValue(page, 'MutePaddingMs').value = config.MutePaddingMs || 100;
+                        getValue(page, 'MuteEntireSentence').checked = config.MuteEntireSentence || false;
+                        Dashboard.hideLoadingMsg();
+                    });
+                }
+
+                document.querySelector('#ProfanityFilterConfigPage').addEventListener('pageshow', function () {
+                    loadConfig(this);
+                });
+
+                document.querySelector('#ProfanityFilterConfigForm').addEventListener('submit', function (event) {
+                    const page = document.querySelector('#ProfanityFilterConfigPage');
+                    event.preventDefault();
+                    Dashboard.showLoadingMsg();
+
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.EnabledByDefault = getValue(page, 'EnabledByDefault').checked;
+                        config.ProfanityWords = getValue(page, 'ProfanityWords').value;
+                        config.EnableWordReplacement = getValue(page, 'EnableWordReplacement').checked;
+                        config.UseGrammaticalReplacement = getValue(page, 'UseGrammaticalReplacement').checked;
+                        config.MutePaddingMs = parseInt(getValue(page, 'MutePaddingMs').value || '100', 10);
+                        config.MuteEntireSentence = getValue(page, 'MuteEntireSentence').checked;
+
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
+                            Dashboard.processPluginConfigurationUpdateResult();
+                        });
+                    });
+
+                    return false;
+                });
+            })();
+        </script>
+    </div>
+</body>
+</html>
