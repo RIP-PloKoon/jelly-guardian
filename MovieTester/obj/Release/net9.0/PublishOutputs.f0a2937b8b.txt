@@ -1,7 +1,0 @@
-/tmp/jellyfin-profanity-filter/MovieTester/bin/Release/net9.0/publish/MovieTester
-/tmp/jellyfin-profanity-filter/MovieTester/bin/Release/net9.0/publish/MovieTester.dll
-/tmp/jellyfin-profanity-filter/MovieTester/bin/Release/net9.0/publish/MovieTester.deps.json
-/tmp/jellyfin-profanity-filter/MovieTester/bin/Release/net9.0/publish/MovieTester.runtimeconfig.json
-/tmp/jellyfin-profanity-filter/MovieTester/bin/Release/net9.0/publish/MovieTester.pdb
-/tmp/jellyfin-profanity-filter/MovieTester/bin/Release/net9.0/publish/Jellyfin.Plugin.ProfanityFilter.dll
-/tmp/jellyfin-profanity-filter/MovieTester/bin/Release/net9.0/publish/Jellyfin.Plugin.ProfanityFilter.pdb

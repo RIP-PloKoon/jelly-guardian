@@ -1,6 +1,7 @@
 # Build artifacts
 bin/
 obj/
+_local_artifacts/
 *.dll
 *.pdb
 *.cache
