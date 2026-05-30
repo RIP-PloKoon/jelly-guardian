@@ -83,7 +83,11 @@ public class ScanLibraryTask : IScheduledTask
         _logger.LogInformation("Found {Count} video items to scan", items.Count);
 
         int processed = 0;
+        int subtitlesFound = 0;
+        int noSubtitle = 0;
+        int withMatches = 0;
         int generated = 0;
+        int writeErrors = 0;
 
         foreach (var item in items)
         {
@@ -98,11 +102,13 @@ public class ScanLibraryTask : IScheduledTask
                 var subtitlePath = FindSubtitleFile(item);
                 if (string.IsNullOrEmpty(subtitlePath))
                 {
+                    noSubtitle++;
                     processed++;
                     progress.Report((double)processed / items.Count * 100);
                     continue;
                 }
 
+                subtitlesFound++;
                 _logger.LogDebug("Processing subtitles for: {Name}", item.Name);
 
                 // Read subtitle file
@@ -130,6 +136,8 @@ public class ScanLibraryTask : IScheduledTask
                 
                 if (matches.Count > 0)
                 {
+                    withMatches++;
+
                     // Generate mute ranges
                     var muteRanges = generator.GenerateMuteRanges(
                         matches,
@@ -138,8 +146,22 @@ public class ScanLibraryTask : IScheduledTask
 
                     // Generate and save metadata
                     var metadataJson = generator.GenerateMetadataJson(muteRanges);
-                    var metadataPath = Path.ChangeExtension(item.Path, ".profanity.json");
-                    await File.WriteAllTextAsync(metadataPath, metadataJson, cancellationToken);
+                    var metadataDirectory = GetMetadataDirectory();
+                    var metadataPath = GetMetadataPath(item.Id);
+
+                    try
+                    {
+                        Directory.CreateDirectory(metadataDirectory);
+                        await File.WriteAllTextAsync(metadataPath, metadataJson, cancellationToken);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        writeErrors++;
+                        _logger.LogError(ex, "Error writing profanity metadata for {Name}: {Path}", item.Name, metadataPath);
+                        processed++;
+                        progress.Report((double)processed / items.Count * 100);
+                        continue;
+                    }
 
                     _logger.LogInformation(
                         "Generated profanity filter for {Name}: {Count} mute ranges",
@@ -158,9 +180,13 @@ public class ScanLibraryTask : IScheduledTask
         }
 
         _logger.LogInformation(
-            "Profanity filter scan complete. Processed: {Processed}, Generated: {Generated}",
+            "Profanity filter scan complete. Processed: {Processed}, SubtitlesFound: {SubtitlesFound}, NoSubtitle: {NoSubtitle}, WithMatches: {WithMatches}, Generated: {Generated}, WriteErrors: {WriteErrors}",
             processed,
-            generated);
+            subtitlesFound,
+            noSubtitle,
+            withMatches,
+            generated,
+            writeErrors);
     }
 
     /// <inheritdoc />
@@ -217,6 +243,23 @@ public class ScanLibraryTask : IScheduledTask
         // Subtitle extractor plugin stores them as: /data/subtitles/{userId}/{itemId}.srt
         var dataPath = _appPaths.DataPath;
         var subtitlesPath = Path.Combine(dataPath, "subtitles");
+
+        var dashedId = item.Id.ToString("D");
+        var modernSubtitleDir = Path.Combine(subtitlesPath, dashedId.Substring(0, 2), dashedId);
+        if (Directory.Exists(modernSubtitleDir))
+        {
+            var subtitle = Directory
+                .EnumerateFiles(modernSubtitleDir, "*.*", SearchOption.TopDirectoryOnly)
+                .FirstOrDefault(path =>
+                    path.EndsWith(".srt", StringComparison.OrdinalIgnoreCase) ||
+                    path.EndsWith(".vtt", StringComparison.OrdinalIgnoreCase));
+
+            if (subtitle != null)
+            {
+                _logger.LogInformation("Found extracted subtitle for {Name}: {Path}", item.Name, subtitle);
+                return subtitle;
+            }
+        }
         
         if (Directory.Exists(subtitlesPath))
         {
@@ -238,5 +281,15 @@ public class ScanLibraryTask : IScheduledTask
 
         _logger.LogDebug("No subtitle found for: {Name}", item.Name);
         return null;
+    }
+
+    private string GetMetadataDirectory()
+    {
+        return Path.Combine(_appPaths.DataPath, "profanity-filter");
+    }
+
+    private string GetMetadataPath(Guid itemId)
+    {
+        return Path.Combine(GetMetadataDirectory(), itemId.ToString("N") + ".json");
     }
 }

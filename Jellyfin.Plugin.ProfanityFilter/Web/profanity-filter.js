@@ -74,6 +74,7 @@
             }
 
             const itemId = state.NowPlayingItem.Id;
+            this.currentItemId = itemId;
             console.log(`[ProfanityFilter] Playback started for item ${itemId}`);
 
             // Load profanity metadata for this item
@@ -86,6 +87,7 @@
 
         onPlaybackStop() {
             console.log('[ProfanityFilter] Playback stopped');
+            this.currentItemId = null;
             this.stopMonitoring();
         }
 
@@ -163,15 +165,36 @@
                 await this.loadMetadata(state.NowPlayingItem.Id);
             }
         }
+
+        getStatus() {
+            return {
+                enabled: this.enabled,
+                muteRangeCount: this.muteRanges.length,
+                currentItemId: this.currentItemId
+            };
+        }
     }
 
-    // Initialize when page loads
-    if (typeof ApiClient !== 'undefined' && typeof playbackManager !== 'undefined') {
-        window.profanityFilter = new ProfanityFilter();
-        window.profanityFilter.init();
+    function initWhenReady(attemptsLeft) {
+        if (window.profanityFilter) {
+            return;
+        }
 
-        // Add toggle button to player controls (optional UI integration)
-        // This would need to be integrated into Jellyfin's UI properly
-        console.log('[ProfanityFilter] Plugin loaded. Use profanityFilter.toggleFilter() to toggle.');
+        if (typeof ApiClient !== 'undefined' && typeof playbackManager !== 'undefined' && typeof Events !== 'undefined') {
+            window.profanityFilter = new ProfanityFilter();
+            window.profanityFilter.init();
+            console.log('[ProfanityFilter] Plugin loaded. Use profanityFilter.toggleFilter() to toggle.');
+            return;
+        }
+
+        if (attemptsLeft > 0) {
+            setTimeout(function() {
+                initWhenReady(attemptsLeft - 1);
+            }, 1000);
+        } else {
+            console.warn('[ProfanityFilter] Jellyfin web APIs were not available; plugin script did not initialize.');
+        }
     }
+
+    initWhenReady(30);
 })();

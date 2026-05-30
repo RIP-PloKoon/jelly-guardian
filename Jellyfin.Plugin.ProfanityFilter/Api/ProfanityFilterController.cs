@@ -38,9 +38,7 @@ public class ProfanityFilterController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<string>> GetMetadata([FromRoute] Guid itemId)
     {
-        // This is a simplified version - in production you'd use ILibraryManager
-        // to get the actual item path
-        var metadataPath = $"{itemId}.profanity.json";
+        var metadataPath = Path.Combine(_appPaths.DataPath, "profanity-filter", itemId.ToString("N") + ".json");
         
         if (!System.IO.File.Exists(metadataPath))
         {
@@ -48,7 +46,29 @@ public class ProfanityFilterController : ControllerBase
         }
 
         var content = await System.IO.File.ReadAllTextAsync(metadataPath);
-        return Ok(content);
+        return Content(content, "application/json");
+    }
+
+    /// <summary>
+    /// Get the client-side profanity filter script.
+    /// </summary>
+    /// <returns>Client JavaScript.</returns>
+    [HttpGet("profanity-filter.js")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetClientScript()
+    {
+        var assembly = typeof(Plugin).Assembly;
+        const string resourceName = "Jellyfin.Plugin.ProfanityFilter.Web.profanity-filter.js";
+        using var stream = assembly.GetManifestResourceStream(resourceName);
+        if (stream == null)
+        {
+            return NotFound();
+        }
+
+        using var reader = new StreamReader(stream);
+        return Content(reader.ReadToEnd(), "application/javascript");
     }
 
     /// <summary>
