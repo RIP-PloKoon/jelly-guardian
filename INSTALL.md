@@ -1,398 +1,207 @@
-# Installation Guide - Jellyfin Profanity Filter
+# Installation Guide
 
-## ⚠️ IMPORTANT: Prerequisites First!
+This guide is for installing the maintained `RIP-PloKoon` fork through Jellyfin's custom plugin repository support.
 
-**This plugin REQUIRES subtitles to work.** You must have one of the following:
+## 1. Add The Plugin Repository
 
-### Option A: Install Subtitle Extractor Plugin (Recommended)
-1. Open Jellyfin Dashboard
-2. Go to **Plugins** → **Catalog**
-3. Install **"Subtitle Extractor"**
-4. Configure it:
-   - Enable OCR extraction
-   - Set language to English (or your preferred language)
-5. Go to **Dashboard** → **Scheduled Tasks**
-6. Run **"Extract Subtitle Images"** task
-7. Wait for it to complete (can take hours for large libraries)
+In Jellyfin:
 
-### Option B: Add SRT Files Manually
-Place `.srt` subtitle files next to your movies:
-```
-/Movies/
-  ├── Deadpool (2016).mkv
-  ├── Deadpool (2016).srt    ← Add this file
+1. Open `Dashboard`.
+2. Go to `Plugins -> Repositories`.
+3. Add a new repository.
+4. Use this repository URL:
+
+```text
+https://raw.githubusercontent.com/RIP-PloKoon/jellyfin-profanity-filter-repo/main/manifest.json
 ```
 
----
+5. Save.
 
-## Installation Steps
+## 2. Install The Plugin
 
-### Step 1: Build the Plugin
+1. Go to `Dashboard -> Plugins -> Catalog`.
+2. Find `Profanity Filter`.
+3. Install the latest version.
+4. Restart Jellyfin.
+5. Confirm the plugin appears under `Dashboard -> Plugins`.
 
-```bash
-# Navigate to plugin directory
-cd /tmp/jellyfin-profanity-filter
+Current published version:
 
-# Build the plugin (requires .NET 9.0 SDK)
-~/.dotnet/dotnet build --configuration Release
+```text
+1.0.3.0
 ```
 
-**Don't have .NET 9.0?** Install it:
-```bash
-wget https://dot.net/v1/dotnet-install.sh
-chmod +x dotnet-install.sh
-./dotnet-install.sh --channel 9.0 --install-dir ~/.dotnet
-export PATH="$HOME/.dotnet:$PATH"
+Compatibility:
+
+```text
+Tested against Jellyfin 10.11.x. Other Jellyfin versions may work but are not verified yet.
 ```
 
-### Step 2: Find Your Jellyfin Plugins Directory
+## 3. Prepare Text Subtitles
 
-**Linux:**
-```bash
-# Default location
-/var/lib/jellyfin/plugins/
+The plugin requires text subtitles. It cannot filter media until it can read `.srt` or `.vtt` subtitle text.
 
-# Or check your config
-grep -r "PluginsPath" /etc/jellyfin/
+Image-based subtitle streams are not supported yet. Media that only has DVD subtitles (`DVDSUB`) or Blu-ray PGS subtitles will not generate profanity metadata unless a text subtitle track is also available.
+
+Recommended path:
+
+1. Install Jellyfin's Subtitle Extract plugin.
+2. Configure it for the subtitle languages you use.
+3. Run the Subtitle Extract scheduled task.
+4. Wait for extraction to finish before running the profanity scan.
+
+Alternative path:
+
+Place external `.srt` or `.vtt` files next to your media files:
+
+```text
+/Movies/Movie Name (2024)/Movie Name (2024).mkv
+/Movies/Movie Name (2024)/Movie Name (2024).srt
 ```
 
-**Your system:**
-```bash
-/media/michael-erekson/RAID1/Jellyfin/Server/plugins/
+Language-specific files are also checked:
+
+```text
+Movie Name (2024).en.srt
 ```
 
-**Windows:**
-```
-C:\ProgramData\Jellyfin\Server\plugins\
-```
+## 4. Configure The Plugin
 
-### Step 3: Install the Plugin
+Open `Dashboard -> Plugins -> Profanity Filter`.
 
-```bash
-# Set your plugins directory
-PLUGINS_DIR="/media/michael-erekson/RAID1/Jellyfin/Server/plugins"
+Settings:
 
-# Create plugin directory (include version number)
-mkdir -p "$PLUGINS_DIR/ProfanityFilter_1.0.0"
+- `Enabled by default`: whether filtering starts enabled for users.
+- `Profanity words`: comma-separated custom words. Leave blank to use the built-in word list.
+- `Mute padding milliseconds`: extra time before and after each detected word.
+- `Mute entire sentence`: mute the full subtitle line instead of only the estimated word range.
+- `Enable word replacement`: generate replacement text when mappings are available.
+- `Use grammatical replacement`: choose replacements using lightweight context rules.
 
-# Copy the DLL
-cp /tmp/jellyfin-profanity-filter/Jellyfin.Plugin.ProfanityFilter/bin/Release/net9.0/Jellyfin.Plugin.ProfanityFilter.dll \
-   "$PLUGINS_DIR/ProfanityFilter_1.0.0/"
+Save the settings before scanning.
 
-# Copy dependencies (if they exist)
-cp /tmp/jellyfin-profanity-filter/Jellyfin.Plugin.ProfanityFilter/bin/Release/net9.0/*.deps.json \
-   "$PLUGINS_DIR/ProfanityFilter_1.0.0/" 2>/dev/null || true
+## 5. Run The Scan
 
-# Verify files
-ls -lh "$PLUGINS_DIR/ProfanityFilter_1.0.0/"
-```
+1. Go to `Dashboard -> Scheduled Tasks`.
+2. Run `Scan Library for Profanity`.
+3. Watch Jellyfin logs for the final scan summary.
 
-Expected output:
-```
--rw-r--r-- 1 user user  45K Dec  2 12:00 Jellyfin.Plugin.ProfanityFilter.dll
--rw-r--r-- 1 user user 2.1K Dec  2 12:00 Jellyfin.Plugin.ProfanityFilter.deps.json
+Expected log shape:
+
+```text
+Profanity filter scan complete. Processed: 3180, SubtitlesFound: 1200, NoSubtitle: 1980, WithMatches: 400, Generated: 400, WriteErrors: 0
 ```
 
-### Step 4: Restart Jellyfin
+Healthy signs:
 
-```bash
-# Using systemd
-sudo systemctl restart jellyfin
+- `SubtitlesFound` is greater than zero.
+- `Generated` is greater than zero for a library with matching words.
+- `WriteErrors` is zero.
 
-# Or find the process and restart manually
-ps aux | grep jellyfin
+Generated metadata is written under Jellyfin's server data path:
+
+```text
+{DataPath}/profanity-filter/{itemId:N}.json
 ```
 
-### Step 5: Verify Plugin Loaded
+For Docker users, `{DataPath}` depends on your container volume mapping. Check your Jellyfin container or appdata path rather than assuming a host path from this guide.
 
-1. Open Jellyfin web interface: `http://your-server:8096`
-2. Go to **Dashboard** → **Plugins**
-3. Look for **"Profanity Filter"** in the list
+## 6. Load The Web Client Script
 
-**Check logs if plugin doesn't appear:**
-```bash
-tail -f /var/log/jellyfin/jellyfin.log | grep -i profanity
-# Or
-journalctl -u jellyfin -f | grep -i profanity
+The plugin exposes the web client script here:
+
+```text
+http://YOUR_JELLYFIN_SERVER:8096/ProfanityFilter/profanity-filter.js
 ```
 
----
+If Jellyfin web does not load it automatically, add this to Jellyfin's custom JavaScript field:
 
-## First Time Setup
-
-### Configure the Plugin
-
-1. Go to **Dashboard** → **Plugins** → **Profanity Filter**
-2. Settings:
-   - **Profanity Words**: Pre-loaded list (customize if needed)
-   - **Mute Padding**: `100` ms (default, works well)
-   - **Mute Entire Sentence**: `false` (mute just the word)
-   - **Enabled by Default**: `true` (turn on for all users)
-3. Click **Save**
-
-### Run Initial Library Scan
-
-1. Go to **Dashboard** → **Scheduled Tasks**
-2. Find **"Scan Library for Profanity"**
-3. Click **Run Now**
-4. Watch the progress
-
-**Monitor scan progress:**
-```bash
-tail -f /var/log/jellyfin/jellyfin.log | grep "Profanity"
-```
-
-You should see:
-```
-[INF] Found 1234 video items to scan
-[INF] Processing subtitles for: Deadpool
-[INF] Generated profanity filter for Deadpool: 50 mute ranges
-```
-
-### Install Client-Side JavaScript (Critical!)
-
-The plugin needs JavaScript in the web player to actually mute audio.
-
-**Method 1: Custom CSS/JS (Easiest)**
-1. Go to **Dashboard** → **General**
-2. Scroll to **Custom CSS** section
-3. In the **Custom Javascript** field, paste:
 ```javascript
-// Load profanity filter
 (function() {
     const script = document.createElement('script');
     script.src = '/ProfanityFilter/profanity-filter.js';
     document.head.appendChild(script);
 })();
 ```
-4. Save and refresh browser
 
-**Method 2: Direct File Copy (More Permanent)**
-```bash
-# Find Jellyfin web root
-WEB_ROOT="/usr/share/jellyfin/web"
-# Or on your system: /media/michael-erekson/RAID1/Jellyfin/Server/jellyfin-web
+Restart or refresh the browser after saving.
 
-# Copy JavaScript file
-sudo cp /tmp/jellyfin-profanity-filter/Jellyfin.Plugin.ProfanityFilter/profanity-filter.js \
-    "$WEB_ROOT/modules/profanity-filter.js"
+## 7. Verify Playback
 
-# Verify
-ls -lh "$WEB_ROOT/modules/profanity-filter.js"
-```
+Open Jellyfin web, start playback for an item that generated metadata, then check the browser console:
 
-Then add to Custom Javascript:
 ```javascript
-import('/modules/profanity-filter.js');
-```
-
----
-
-## Testing
-
-### Test on a Single Movie
-
-```bash
-# Test detection on subtitle file
-/tmp/enhanced-tester.sh /path/to/subtitle.srt
-```
-
-### Test in Browser
-
-1. Open a movie in Jellyfin web player
-2. Open browser console (F12)
-3. Type: `profanityFilter.toggleFilter()`
-4. Should see: `Profanity filter enabled/disabled`
-5. Play movie and check if profanity is muted
-
-### Verify Metadata Files
-
-```bash
-# Check for generated metadata
-find /media/michael-erekson/RAID1/Jellyfin/Movies/ -name "*.profanity.json"
-
-# View metadata for a specific movie
-cat "/path/to/Movie (2016).profanity.json"
-```
-
-Expected format:
-```json
-{
-  "version": "1.0",
-  "muteRanges": [
-    { "start": 65265, "end": 67833, "word": "ass" },
-    { "start": 77945, "end": 80812, "word": "shit" }
-  ]
-}
-```
-
----
-
-## Troubleshooting
-
-### Plugin Not Appearing
-
-**Check plugin files exist:**
-```bash
-ls -lh /media/michael-erekson/RAID1/Jellyfin/Server/plugins/ProfanityFilter_1.0.0/
-```
-
-**Check logs for errors:**
-```bash
-grep -i "profanity\|error\|exception" /var/log/jellyfin/jellyfin.log | tail -20
-```
-
-**Common issue:** Wrong .NET version
-```bash
-# Plugin needs .NET 9.0
-dotnet --version
-# Should show: 9.0.x
-```
-
-### No Subtitles Found
-
-**Verify Subtitle Extractor ran:**
-```bash
-find /media/michael-erekson/RAID1/Jellyfin/Server/data/subtitles/ -name "*.srt" | wc -l
-```
-
-**Check individual movie:**
-```bash
-# Find subtitle for specific movie
-find /media/michael-erekson/RAID1/Jellyfin/Server/data/subtitles/ -name "*.srt" \
-  -exec grep -l "movie dialog" {} \;
-```
-
-### Profanity Not Muted During Playback
-
-**1. Check JavaScript loaded:**
-- Open browser console (F12)
-- Type: `profanityFilter`
-- Should see: `Object { toggleFilter: function, ... }`
-
-**2. Check metadata exists:**
-- Play a movie
-- In console, check: `fetch('/ProfanityFilter/Metadata/ITEM_ID').then(r => r.json()).then(console.log)`
-- Should return JSON with mute ranges
-
-**3. Check filter is enabled:**
-- Console: `profanityFilter.getStatus()`
-- Should show: `enabled: true`
-
-### Profanity Not Detected
-
-**Test the subtitle file manually:**
-```bash
-# Check if subtitle has profanity
-grep -i "fuck\|shit\|damn" /path/to/subtitle.srt
-
-# Test with detection script
-/tmp/enhanced-tester.sh /path/to/subtitle.srt
-```
-
-**Check word list configuration:**
-- Dashboard → Plugins → Profanity Filter
-- Verify word list includes the words you expect
-
----
-
-## User Controls
-
-### Per-User Toggle
-
-Each user can control the filter independently:
-
-**Via API:**
-```bash
-# Enable for user
-curl -X POST http://localhost:8096/ProfanityFilter/UserPreferences/USER_ID \
-  -H "Content-Type: application/json" \
-  -d '{"enabled": true}'
-
-# Check status
-curl http://localhost:8096/ProfanityFilter/UserPreferences/USER_ID
-```
-
-**Via Browser Console:**
-```javascript
-// Toggle on/off
-profanityFilter.toggleFilter()
-
-// Check status
+window.profanityFilter
 profanityFilter.getStatus()
 ```
 
-### Quick Toggle During Playback
+Expected status for a matched item:
 
-While watching a movie:
-1. Press F12 to open console
-2. Type: `profanityFilter.toggleFilter()`
-3. Filter toggles immediately (no restart needed)
-
----
-
-## Performance Notes
-
-**Scan Performance:**
-- ~1 second per movie with subtitles
-- 1000 movie library = ~15 minutes
-- Scheduled weekly by default
-
-**Storage Impact:**
-- ~5KB metadata per movie
-- 1000 movies = ~5MB total
-
-**Playback Performance:**
-- Client checks every 100ms
-- Negligible CPU impact
-- No buffering or lag
-
----
-
-## Uninstalling
-
-```bash
-# Remove plugin directory
-rm -rf /media/michael-erekson/RAID1/Jellyfin/Server/plugins/ProfanityFilter_1.0.0
-
-# Remove metadata files (optional)
-find /media/michael-erekson/RAID1/Jellyfin/Movies/ -name "*.profanity.json" -delete
-
-# Restart Jellyfin
-sudo systemctl restart jellyfin
+```javascript
+{
+  enabled: true,
+  muteRangeCount: 1,
+  currentItemId: "..."
+}
 ```
 
----
+`muteRangeCount` should be greater than zero for media with generated metadata.
 
-## Getting Help
+You can toggle the filter from the console:
 
-**Check logs first:**
-```bash
-tail -100 /var/log/jellyfin/jellyfin.log | grep -i profanity
+```javascript
+profanityFilter.toggleFilter()
 ```
 
-**Test components individually:**
-1. Subtitle extraction: Check `/data/subtitles/` has `.srt` files
-2. Plugin loaded: Check Dashboard → Plugins
-3. Scan ran: Check for `.profanity.json` files
-4. Client script: Check browser console for errors
+## Troubleshooting
 
-**Still having issues?**
-- Post logs to GitHub issues
-- Include: Jellyfin version, OS, plugin version
-- Describe: What you expected vs what happened
+Plugin does not appear:
 
----
+- Confirm the repository URL was saved correctly.
+- Restart Jellyfin after install.
+- Check Jellyfin logs for plugin load errors.
 
-## Success! 🎉
+No subtitles found:
 
-You should now have:
-- ✅ Plugin installed and loaded
-- ✅ Library scanned for profanity
-- ✅ Metadata files generated
-- ✅ Client-side muting working
-- ✅ Per-user control available
+- Confirm Subtitle Extract has finished.
+- Confirm external `.srt` or `.vtt` files are visible inside the Jellyfin container.
+- Confirm the media has text subtitles. Image subtitle formats such as `DVDSUB` and `PGS` are not readable by this plugin yet.
+- Check Jellyfin logs for the scan summary counters.
 
-**Test it:** Play Deadpool and listen for muted profanity!
+No metadata generated:
 
-Your family can now enjoy cleaner content on your self-hosted Jellyfin server. 🎬🔇
+- Confirm `SubtitlesFound` is greater than zero.
+- Confirm the configured word list is not accidentally empty because of custom settings.
+- Leave `Profanity words` blank to use the built-in list.
+- Check `WriteErrors` in the scan summary.
+
+Script endpoint fails:
+
+- Open `/ProfanityFilter/profanity-filter.js` directly in a browser.
+- Restart Jellyfin after plugin updates.
+- Confirm the installed plugin version is current.
+
+Playback does not mute:
+
+- Confirm the script loaded in the browser console.
+- Confirm `profanityFilter.getStatus()` reports the current item ID.
+- Confirm `muteRangeCount` is greater than zero.
+- Confirm browser playback is using Jellyfin web. Other Jellyfin clients are not supported yet.
+
+## Advanced Manual Install
+
+Manual DLL installation is not the normal path for this fork. Prefer the custom repository install above.
+
+For development only:
+
+```bash
+dotnet build Jellyfin.Plugin.ProfanityFilter.sln --configuration Release
+```
+
+Then copy the release output from:
+
+```text
+Jellyfin.Plugin.ProfanityFilter/bin/Release/net9.0/
+```
+
+to an appropriate Jellyfin plugin directory and restart Jellyfin. Directory names and writable paths vary by platform, package type, and Docker volume mapping.
