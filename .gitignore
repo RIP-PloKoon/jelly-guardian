@@ -20,6 +20,10 @@ _local_artifacts/
 # NuGet
 *.nupkg
 packages/
+.dotnet/
+.dotnet-home/
+.nuget/
+dotnet-install.sh
 
 # OS
 .DS_Store
@@ -27,3 +31,6 @@ Thumbs.db
 
 # Test outputs
 TestResults/
+
+# Local release/package artifacts
+*.zip
