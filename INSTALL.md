@@ -75,6 +75,8 @@ Settings:
 - `Profanity words`: comma-separated custom words. Leave blank to use the built-in word list.
 - `Mute padding milliseconds`: extra time before and after each detected word.
 - `Mute entire sentence`: mute the full subtitle line instead of only the estimated word range.
+- `Generate muted audio tracks for native clients`: create a separate, muted AAC audio track for items with matches. The Jellyfin service account must be able to write to the media folder.
+- `FFmpeg executable`: `ffmpeg` when available on Jellyfin's `PATH`, or the absolute path to the FFmpeg executable.
 - `Enable word replacement`: generate replacement text when mappings are available.
 - `Use grammatical replacement`: choose replacements using lightweight context rules.
 
@@ -106,6 +108,14 @@ Generated metadata is written under Jellyfin's server data path:
 
 For Docker users, `{DataPath}` depends on your container volume mapping. Check your Jellyfin container or appdata path rather than assuming a host path from this guide.
 
+When muted audio-track generation is enabled, the scan also writes an AAC sidecar next to each matching media file:
+
+```text
+Movie Name (2024).profanity-filter.eng.m4a
+```
+
+This does not change the original media. Refresh the Jellyfin library after the scan, then select `Profanity Filter (Muted)` from the audio-track selector in Roku or another native client. The sidecar is created from the first audio stream; it is intended for media with English primary audio.
+
 ## 6. Load The Web Client Script
 
 The plugin exposes the web client script here:
@@ -114,15 +124,17 @@ The plugin exposes the web client script here:
 http://YOUR_JELLYFIN_SERVER:8096/ProfanityFilter/profanity-filter.js
 ```
 
-If Jellyfin web does not load it automatically, add this to Jellyfin's custom JavaScript field:
+Jellyfin plugins cannot automatically inject JavaScript into every web session. Add this one-time loader to `Dashboard -> General -> Custom JavaScript`:
 
 ```javascript
 (function() {
     const script = document.createElement('script');
-    script.src = '/ProfanityFilter/profanity-filter.js';
+    script.src = '/ProfanityFilter/profanity-filter-loader.js';
     document.head.appendChild(script);
 })();
 ```
+
+The loader injects `/ProfanityFilter/profanity-filter.js` once per page. For a reverse proxy mounted below `/`, change the URL to include that prefix, such as `/jellyfin/ProfanityFilter/profanity-filter-loader.js`.
 
 Restart or refresh the browser after saving.
 
@@ -186,7 +198,21 @@ Playback does not mute:
 - Confirm the script loaded in the browser console.
 - Confirm `profanityFilter.getStatus()` reports the current item ID.
 - Confirm `muteRangeCount` is greater than zero.
-- Confirm browser playback is using Jellyfin web. Other Jellyfin clients are not supported yet.
+- Confirm browser playback is using Jellyfin web. Roku and other native clients do not run this JavaScript and therefore cannot be muted by this plugin.
+
+## Roku and Other Apps
+
+This plugin mutes the HTML5 `<video>` element in Jellyfin Web. A Roku channel, smart-TV app, phone app, or unrelated streaming app has its own playback process and cannot receive JavaScript instructions from the server or from a browser.
+
+For Jellyfin native clients, enable `Generate muted audio tracks for native clients`, run the scan, refresh the library, and select the generated `Profanity Filter (Muted)` sidecar audio track. This is audio-only FFmpeg processing; it preserves the video and original audio file.
+
+Practical options are:
+
+- use Jellyfin Web on a device where the loader can run;
+- use a client that adds native support for this plugin's metadata API; or
+- use the generated muted sidecar track.
+
+The generated track is separate from the original, so it must be selected by the client. The server cannot force Roku or other native clients to switch tracks automatically.
 
 ## Advanced Manual Install
 

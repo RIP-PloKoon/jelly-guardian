@@ -39,6 +39,7 @@ https://github.com/RIP-PloKoon/jelly-guardian
 - Generates compact JSON mute metadata under Jellyfin server data.
 - Serves a Jellyfin web client script from the plugin API.
 - Supports configurable word list, mute padding, sentence muting, and default enabled state.
+- Can optionally create muted AAC sidecar audio tracks for Roku and other native clients.
 - Includes a CleanVid-derived embedded word list when no custom list is configured.
 
 ## Requirements
@@ -105,15 +106,17 @@ The plugin serves its client script at:
 /ProfanityFilter/profanity-filter.js
 ```
 
-If Jellyfin does not load the script automatically, add this to Jellyfin web custom JavaScript:
+Jellyfin plugins cannot force the web client to execute arbitrary JavaScript. Add the loader below once in `Dashboard -> General -> Custom JavaScript`:
 
 ```javascript
 (function() {
     const script = document.createElement('script');
-    script.src = '/ProfanityFilter/profanity-filter.js';
+    script.src = '/ProfanityFilter/profanity-filter-loader.js';
     document.head.appendChild(script);
 })();
 ```
+
+The loader then loads the real client script exactly once. If Jellyfin is installed under a reverse-proxy path, use the full server-relative URL, for example `/jellyfin/ProfanityFilter/profanity-filter-loader.js`.
 
 During playback, the browser console should expose:
 
@@ -152,6 +155,16 @@ Get the client script:
 GET /ProfanityFilter/profanity-filter.js
 ```
 
+## Native-Client Muted Audio Tracks
+
+Enable `Generate muted audio tracks for native clients` in the plugin settings, set the FFmpeg executable if it is not on Jellyfin's `PATH`, then run the library scan. For every matched item, the scan reads the first audio stream and writes a non-destructive AAC sidecar named:
+
+```text
+Movie Name (2024).profanity-filter.eng.m4a
+```
+
+The Jellyfin service account must have write access to the media folder. Refresh the library after the scan, then select the `Profanity Filter (Muted)` audio track in Roku or another native client. The original audio track and media file are not changed.
+
 ## Build From Source
 
 ```bash
@@ -182,7 +195,8 @@ The inherited helper tools are kept under `tools/legacy/` for developer referenc
 
 - Requires text subtitles. Image-based subtitle streams such as `DVDSUB` and `PGS` are not scanned yet.
 - Currently focused on English word lists.
-- Playback muting currently targets Jellyfin web. Other Jellyfin clients are not supported yet.
+- Playback muting currently targets Jellyfin web. Roku, mobile, TV, and other native clients do not execute this browser JavaScript.
+- The plugin cannot mute arbitrary apps or system audio. Native clients can instead use an opt-in, pre-generated muted audio track after it is selected for playback.
 - Detection is pattern-based and can miss context, variants, or subtitle timing edge cases.
 - Per-user preference persistence is still basic.
 
