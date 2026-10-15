@@ -40,4 +40,14 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets a value indicating whether to mute the entire sentence or just the word.
     /// </summary>
     public bool MuteEntireSentence { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the library scan creates muted AAC sidecar audio tracks.
+    /// </summary>
+    public bool GenerateMutedAudioTracks { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets the FFmpeg executable used to generate muted sidecar audio tracks.
+    /// </summary>
+    public string FfmpegPath { get; set; } = "ffmpeg";
 }

@@ -59,8 +59,25 @@ public class ProfanityFilterController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult GetClientScript()
     {
+        return GetEmbeddedScript("Jellyfin.Plugin.ProfanityFilter.Web.profanity-filter.js");
+    }
+
+    /// <summary>
+    /// Get a small loader that injects the client script exactly once.
+    /// </summary>
+    /// <returns>Client JavaScript loader.</returns>
+    [HttpGet("profanity-filter-loader.js")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetClientScriptLoader()
+    {
+        return GetEmbeddedScript("Jellyfin.Plugin.ProfanityFilter.Web.profanity-filter-loader.js");
+    }
+
+    private IActionResult GetEmbeddedScript(string resourceName)
+    {
         var assembly = typeof(Plugin).Assembly;
-        const string resourceName = "Jellyfin.Plugin.ProfanityFilter.Web.profanity-filter.js";
         using var stream = assembly.GetManifestResourceStream(resourceName);
         if (stream == null)
         {

@@ -38,6 +38,20 @@
 
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label>
+                            <input is="emby-checkbox" type="checkbox" id="GenerateMutedAudioTracks" />
+                            <span>Generate muted audio tracks for native clients</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">During scans, create an AAC sidecar track beside matching media. Requires FFmpeg and write access to the media folder. Refresh the library, then select the “Profanity Filter (Muted)” audio track in Roku or another native client.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="FfmpegPath">FFmpeg executable</label>
+                        <input is="emby-input" type="text" id="FfmpegPath" class="emby-input" />
+                        <div class="fieldDescription">Use <code>ffmpeg</code> when it is on Jellyfin’s PATH, or enter the absolute executable path.</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
                             <input is="emby-checkbox" type="checkbox" id="EnableWordReplacement" />
                             <span>Enable word replacement</span>
                         </label>
@@ -78,6 +92,8 @@
                         getValue(page, 'UseGrammaticalReplacement').checked = config.UseGrammaticalReplacement || false;
                         getValue(page, 'MutePaddingMs').value = config.MutePaddingMs || 100;
                         getValue(page, 'MuteEntireSentence').checked = config.MuteEntireSentence || false;
+                        getValue(page, 'GenerateMutedAudioTracks').checked = config.GenerateMutedAudioTracks || false;
+                        getValue(page, 'FfmpegPath').value = config.FfmpegPath || 'ffmpeg';
                         Dashboard.hideLoadingMsg();
                     });
                 }
@@ -98,6 +114,8 @@
                         config.UseGrammaticalReplacement = getValue(page, 'UseGrammaticalReplacement').checked;
                         config.MutePaddingMs = parseInt(getValue(page, 'MutePaddingMs').value || '100', 10);
                         config.MuteEntireSentence = getValue(page, 'MuteEntireSentence').checked;
+                        config.GenerateMutedAudioTracks = getValue(page, 'GenerateMutedAudioTracks').checked;
+                        config.FfmpegPath = getValue(page, 'FfmpegPath').value.trim() || 'ffmpeg';
 
                         ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
                             Dashboard.processPluginConfigurationUpdateResult();

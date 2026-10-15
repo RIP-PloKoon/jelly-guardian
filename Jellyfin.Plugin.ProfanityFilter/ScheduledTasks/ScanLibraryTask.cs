@@ -70,6 +70,7 @@ public class ScanLibraryTask : IScheduledTask
         var parser = new Services.SubtitleParser();
         var detector = new Services.ProfanityDetector(config.ProfanityWords, config.EnableWordReplacement, config.UseGrammaticalReplacement);
         var generator = new Services.MuteTimestampGenerator();
+        var audioMuteService = new Services.FfmpegAudioMuteService(_logger);
 
         // Get all video items from library
         var query = new InternalItemsQuery
@@ -88,6 +89,8 @@ public class ScanLibraryTask : IScheduledTask
         int withMatches = 0;
         int generated = 0;
         int writeErrors = 0;
+        int audioTracksGenerated = 0;
+        int audioTrackErrors = 0;
 
         foreach (var item in items)
         {
@@ -168,6 +171,32 @@ public class ScanLibraryTask : IScheduledTask
                         item.Name,
                         muteRanges.Count);
                     generated++;
+
+                    if (config.GenerateMutedAudioTracks)
+                    {
+                        if (string.IsNullOrWhiteSpace(item.Path))
+                        {
+                            audioTrackErrors++;
+                            _logger.LogError("Cannot create a muted audio track because {Name} has no media path", item.Name);
+                        }
+                        else
+                        {
+                            var audioTrackCreated = await audioMuteService.CreateMutedAudioTrackAsync(
+                                item.Path,
+                                muteRanges,
+                                config.FfmpegPath,
+                                cancellationToken);
+
+                            if (audioTrackCreated)
+                            {
+                                audioTracksGenerated++;
+                            }
+                            else
+                            {
+                                audioTrackErrors++;
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -180,13 +209,15 @@ public class ScanLibraryTask : IScheduledTask
         }
 
         _logger.LogInformation(
-            "Profanity filter scan complete. Processed: {Processed}, SubtitlesFound: {SubtitlesFound}, NoSubtitle: {NoSubtitle}, WithMatches: {WithMatches}, Generated: {Generated}, WriteErrors: {WriteErrors}",
+            "Profanity filter scan complete. Processed: {Processed}, SubtitlesFound: {SubtitlesFound}, NoSubtitle: {NoSubtitle}, WithMatches: {WithMatches}, Generated: {Generated}, WriteErrors: {WriteErrors}, AudioTracksGenerated: {AudioTracksGenerated}, AudioTrackErrors: {AudioTrackErrors}",
             processed,
             subtitlesFound,
             noSubtitle,
             withMatches,
             generated,
-            writeErrors);
+            writeErrors,
+            audioTracksGenerated,
+            audioTrackErrors);
     }
 
     /// <inheritdoc />

@@ -21,6 +21,7 @@
     <EmbeddedResource Include="Resources\swears.txt" />
     <EmbeddedResource Include="Configuration\configPage.html" />
     <EmbeddedResource Include="Web\profanity-filter.js" />
+    <EmbeddedResource Include="Web\profanity-filter-loader.js" />
   </ItemGroup>
 
 </Project>
